@@ -12,6 +12,7 @@ import '../../../../shared/widgets/monogram_avatar.dart';
 import '../../../../shared/widgets/surface_card.dart';
 import '../../../auth/providers/auth_providers.dart';
 import '../../domain/models/badge_definition.dart';
+import '../../domain/models/user_profile.dart';
 import '../../providers/profile_providers.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -97,12 +98,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                 userId: userId,
                 strings: strings,
                 isDark: isDark,
-                onEditName: () async {
-                  final profile = await ref.read(currentUserProfileProvider.future);
-                  if (mounted) {
-                    _showEditNameDialog(context, ref, profile.displayName, strings);
-                  }
-                },
+                onEditProfile: () => context.push('/profile/edit'),
               ),
             ),
 
@@ -212,14 +208,14 @@ class _WaveHeader extends StatelessWidget {
     required this.userId,
     required this.strings,
     required this.isDark,
-    required this.onEditName,
+    required this.onEditProfile,
   });
 
-  final AsyncValue profileAsync;
+  final AsyncValue<UserProfile> profileAsync;
   final String? userId;
   final AppStrings strings;
   final bool isDark;
-  final VoidCallback onEditName;
+  final VoidCallback onEditProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -232,8 +228,12 @@ class _WaveHeader extends StatelessWidget {
         children: [
           // Wave background
           Positioned.fill(
-            child: CustomPaint(
-              painter: _WaveBackgroundPainter(isDark: isDark),
+            child: profileAsync.maybeWhen(
+              data: (p) => _WaveHeaderBackground(
+                isDark: isDark,
+                imageUrl: p.coverUrl,
+              ),
+              orElse: () => _WaveHeaderBackground(isDark: isDark),
             ),
           ),
 
@@ -287,35 +287,10 @@ class _WaveHeader extends StatelessWidget {
                         ),
                         child: MonogramAvatar(
                           seedText: profile.displayName,
+                          imageUrl: profile.avatarUrl,
                           size: 100,
                           showShadow: false,
                           isCircle: true,
-                        ),
-                      ),
-                      Positioned(
-                        right: -2,
-                        bottom: -2,
-                        child: GestureDetector(
-                          onTap: onEditName,
-                          child: Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
-                                  blurRadius: 8,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.edit_rounded,
-                              color: AppColors.primary,
-                              size: 17,
-                            ),
-                          ),
                         ),
                       ),
                     ],
@@ -348,7 +323,23 @@ class _WaveHeader extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  if (profile.bio != null && profile.bio!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 48),
+                      child: Text(
+                        profile.bio!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
 
                   // Anonymous pill
                   Container(
@@ -381,6 +372,25 @@ class _WaveHeader extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 20),
+
+                  // Edit Profile Button
+                  ElevatedButton(
+                    onPressed: onEditProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      strings.editProfile,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -392,6 +402,38 @@ class _WaveHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _WaveHeaderBackground extends StatelessWidget {
+  const _WaveHeaderBackground({required this.isDark, this.imageUrl});
+  final bool isDark;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CustomPaint(
+          painter: _WaveBackgroundPainter(isDark: isDark),
+        ),
+        if (imageUrl != null && imageUrl!.isNotEmpty)
+          _buildCoverImage(imageUrl!),
+      ],
+    );
+  }
+
+  Widget _buildCoverImage(String path) {
+    return Opacity(
+      opacity: 0.3,
+      child: Image(
+        image: path.startsWith('http')
+            ? NetworkImage(path)
+            : AssetImage(path) as ImageProvider,
+        fit: BoxFit.cover,
       ),
     );
   }
@@ -1446,51 +1488,6 @@ class _AnimatedSlideState extends State<_AnimatedSlide>
 // ──────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────────────────────────────────
-Future<void> _showEditNameDialog(
-  BuildContext context,
-  WidgetRef ref,
-  String initialValue,
-  AppStrings strings,
-) async {
-  final controller = TextEditingController(text: initialValue);
-  await showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text(strings.editName, style: const TextStyle(fontWeight: FontWeight.bold)),
-      content: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: strings.enterDisplayName,
-          filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: Text(strings.cancel),
-        ),
-        FilledButton(
-          onPressed: () async {
-            await ref.read(profileEditProvider.notifier).saveDisplayName(controller.text);
-            if (ctx.mounted) Navigator.of(ctx).pop();
-          },
-          style: FilledButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: Text(strings.save),
-        ),
-      ],
-    ),
-  );
-}
-
 String _obfuscatedId(String? userId) {
   if (userId == null || userId.length < 8) return 'Anonymous ID';
   return 'ID ${userId.substring(0, 4)}••••${userId.substring(userId.length - 4)}';
@@ -1521,5 +1518,56 @@ void _showHelpSupport(BuildContext context) {
 void _launchPrivacyPolicy(BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(content: Text('Privacy Policy is coming soon!')),
+  );
+}
+
+void _showEditNameDialog(
+    BuildContext context, WidgetRef ref, String currentName, AppStrings strings) {
+  final controller = TextEditingController(text: currentName);
+  showDialog(
+    context: context,
+    builder: (context) {
+      return Consumer(
+        builder: (context, ref, _) {
+          final isSaving = ref.watch(profileEditProvider).isSaving;
+          return AlertDialog(
+            title: Text(strings.editName),
+            content: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: strings.displayName,
+                hintText: strings.enterDisplayName,
+              ),
+              autofocus: true,
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(context),
+                child: Text(strings.cancel),
+              ),
+              ElevatedButton(
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        await ref
+                            .read(profileEditProvider.notifier)
+                            .updateProfile(displayName: controller.text);
+                        if (context.mounted &&
+                            ref.read(profileEditProvider).error == null) {
+                          Navigator.pop(context);
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text(strings.save),
+              ),
+            ],
+          );
+        },
+      );
+    },
   );
 }

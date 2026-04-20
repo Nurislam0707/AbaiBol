@@ -250,6 +250,16 @@ class ReviewRemoteService {
     return _client.storage.from('review_images').getPublicUrl(filePath);
   }
 
+  Future<List<Map<String, dynamic>>> fetchGlobalRecentReviews({int limit = 10}) async {
+    final rows = await _client
+        .from('reviews')
+        .select('*, teacher:teacher_id(name), subject:subject_id(name), building:building_id(name), student_life:student_life_id(name), club:club_id(name)')
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    return (rows as List<dynamic>).cast<Map<String, dynamic>>();
+  }
+
   String _getTargetColumn(ReviewTargetKind kind) {
     return switch (kind) {
       ReviewTargetKind.teacher => 'teacher_id',

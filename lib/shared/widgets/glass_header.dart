@@ -2,6 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../features/notifications/providers/notification_providers.dart';
 
 import '../../core/constants/app_spacing.dart';
 import '../../core/theme/app_colors.dart';
@@ -60,7 +64,7 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(96);
 }
 
-class _GlassHeaderContent extends StatelessWidget {
+class _GlassHeaderContent extends ConsumerWidget {
   const _GlassHeaderContent({
     required this.title,
     this.subtitle,
@@ -72,9 +76,10 @@ class _GlassHeaderContent extends StatelessWidget {
   final bool? canPop;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
 
     return ClipRect(
       child: BackdropFilter(
@@ -162,9 +167,39 @@ class _GlassHeaderContent extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton.filledTonal(
-                  onPressed: () {},
-                  icon: const Icon(Icons.notifications_none_rounded),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton.filledTonal(
+                      onPressed: () => context.push('/notifications'),
+                      icon: const Icon(Icons.notifications_none_rounded),
+                    ),
+                    if (unreadCount > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            unreadCount > 9 ? '9+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),

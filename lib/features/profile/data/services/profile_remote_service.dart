@@ -11,7 +11,7 @@ class ProfileRemoteService {
   Future<UserProfile?> fetchProfile(String userId) async {
     final row = await _client
         .from('profiles')
-        .select('user_id, display_name, created_at, updated_at')
+        .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -22,6 +22,9 @@ class ProfileRemoteService {
     return UserProfile(
       userId: row['user_id'] as String,
       displayName: row['display_name'] as String,
+      avatarUrl: row['avatar_url'] as String?,
+      coverUrl: row['cover_url'] as String?,
+      bio: row['bio'] as String?,
       createdAt: DateTime.parse(row['created_at'] as String).toLocal(),
       updatedAt: DateTime.parse(row['updated_at'] as String).toLocal(),
     );
@@ -37,14 +40,20 @@ class ProfileRemoteService {
     });
   }
 
-  Future<void> updateDisplayName({
+  Future<void> updateProfile({
     required String userId,
     required String displayName,
+    String? bio,
+    String? avatarUrl,
+    String? coverUrl,
   }) {
     return _client
         .from('profiles')
         .update({
           'display_name': displayName,
+          'bio': bio,
+          'avatar_url': avatarUrl,
+          'cover_url': coverUrl,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('user_id', userId);

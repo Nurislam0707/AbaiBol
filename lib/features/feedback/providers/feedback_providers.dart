@@ -99,6 +99,12 @@ final featuredTeacherProvider = FutureProvider<ReviewCatalogSummary?>((ref) asyn
 
 final campusVibeProvider = StateProvider<CampusVibe>((ref) => CampusVibe.productive);
 
+final recentActivityProvider = FutureProvider<List<ActivityFeedItem>>((ref) {
+  // Trigger re-fetch on any review change
+  ref.watch(reviewsStreamProvider);
+  return ref.watch(reviewRepositoryProvider).fetchRecentActivity(limit: 5);
+});
+
 final trendingKeywordsProvider = Provider<Map<String, double>>((ref) {
   return const MockFeedbackRepository().trendingKeywords;
 });

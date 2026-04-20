@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -25,7 +26,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     const repository = MockFeedbackRepository();
     final categories = repository.categories;
-    final activities = repository.activityFeed;
+    final activitiesAsync = ref.watch(recentActivityProvider);
     final featuredAsync = ref.watch(featuredTeacherProvider);
     
     final theme = Theme.of(context);
@@ -96,13 +97,21 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   
-                  // ─── Recent Activity Feed ────────────────────────────────────
-                  ...activities.map(
-                    (activity) => Padding(
-                      key: ValueKey('activity_${activity.id}'),
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _ActivityCard(activity: activity, isDark: isDark),
+                  // --- Recent Activity Feed ---
+                  activitiesAsync.when(
+                    data: (activities) => Column(
+                      children: activities.map(
+                        (activity) => Padding(
+                          key: ValueKey('activity_${activity.id}'),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _ActivityCard(activity: activity, isDark: isDark),
+                        ),
+                      ).toList(),
                     ),
+                    loading: () => Column(
+                      children: List.generate(3, (index) => const _ActivityLoading()),
+                    ),
+                    error: (_, __) => const SizedBox.shrink(),
                   ),
                 ],
               ),
@@ -114,13 +123,161 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeHub extends StatelessWidget {
+
+class _HomeHub extends StatefulWidget {
   const _HomeHub({required this.strings});
+  final AppStrings strings;
+
+  @override
+  State<_HomeHub> createState() => _HomeHubState();
+}
+
+class _HomeHubState extends State<_HomeHub> {
+  late final PageController _pageController;
+  late final Timer _timer;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: 0);
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_pageController.hasClients) {
+        final nextPage = (_currentPage + 1) % 4;
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final slides = [
+      _CarouselData(
+        tag: '100% ${widget.strings.anonymousStudent.toUpperCase()}',
+        title: widget.strings.helpImproveLife,
+        subtitle: widget.strings.anonymousExplanation,
+        icon: Icons.auto_graph_rounded,
+        stats: [
+          _HubStatData(label: '12K+', sub: widget.strings.reviews),
+          _HubStatData(label: '4.8', sub: widget.strings.happiness),
+        ],
+      ),
+      _CarouselData(
+        tag: '🛡️ ${widget.strings.anonymousAndSafe}',
+        title: widget.strings.anonymousFeedbackForInstructors,
+        subtitle: widget.strings.rateTeachersFairly,
+        icon: Icons.school_rounded,
+        stats: [
+          _HubStatData(label: '500+', sub: widget.strings.teacherReviews),
+          _HubStatData(label: '4.6', sub: widget.strings.qualityLevel),
+        ],
+      ),
+      _CarouselData(
+        tag: '🏛️ ${widget.strings.scanQr}',
+        title: widget.strings.anonymousFeedbackForBuildings,
+        subtitle: widget.strings.scanSubtitle,
+        icon: Icons.business_rounded,
+        stats: [
+          _HubStatData(label: '15+', sub: widget.strings.buildingReviews),
+          _HubStatData(label: '4.2', sub: widget.strings.cleanliness),
+        ],
+      ),
+      _CarouselData(
+        tag: '📚 ${widget.strings.subjectReviews.toUpperCase()}',
+        title: widget.strings.anonymousFeedbackForSubjects,
+        subtitle: widget.strings.shareSubjectsOpinion,
+        icon: Icons.auto_stories_rounded,
+        stats: [
+          _HubStatData(label: '300+', sub: widget.strings.subjectReviews),
+          _HubStatData(label: '4.9', sub: widget.strings.useful),
+        ],
+      ),
+    ];
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 240,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (idx) => setState(() => _currentPage = idx),
+            itemCount: slides.length,
+            itemBuilder: (context, index) => _CarouselCard(
+              data: slides[index],
+              strings: widget.strings,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            slides.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              height: 6,
+              width: _currentPage == index ? 24 : 6,
+              decoration: BoxDecoration(
+                color: _currentPage == index 
+                    ? Theme.of(context).colorScheme.primary 
+                    : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CarouselData {
+  final String tag;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final List<_HubStatData> stats;
+
+  _CarouselData({
+    required this.tag,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.stats,
+  });
+}
+
+class _HubStatData {
+  final String label;
+  final String sub;
+  _HubStatData({required this.label, required this.sub});
+}
+
+class _CarouselCard extends StatelessWidget {
+  const _CarouselCard({required this.data, required this.strings});
+  final _CarouselData data;
   final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 0),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
@@ -147,7 +304,7 @@ class _HomeHub extends StatelessWidget {
             right: -20,
             bottom: -20,
             child: Icon(
-              Icons.auto_graph_rounded,
+              data.icon,
               size: 140,
               color: Colors.white.withValues(alpha: 0.12),
             ),
@@ -167,7 +324,7 @@ class _HomeHub extends StatelessWidget {
                     const Icon(Icons.security_rounded, color: Colors.white, size: 14),
                     const SizedBox(width: 6),
                     Text(
-                      '100% ${strings.anonymousStudent.toUpperCase()}',
+                      data.tag,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 10,
@@ -180,7 +337,9 @@ class _HomeHub extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                strings.helpImproveLife,
+                data.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w900,
@@ -188,29 +347,24 @@ class _HomeHub extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 12),
-              Text(
-                strings.anonymousExplanation,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.75),
-                      height: 1.5,
-                    ),
+              Expanded(
+                child: Text(
+                  data.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        height: 1.5,
+                      ),
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Row(
                 children: [
-                  _HubStat(label: '12K+', sub: strings.reviews),
-                  const SizedBox(width: 24),
-                  _HubStat(label: '4.8', sub: strings.happiness),
-                  const Spacer(),
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-                  ),
+                  ...data.stats.map((s) => Padding(
+                    padding: const EdgeInsets.only(right: 24),
+                    child: _HubStat(label: s.label, sub: s.sub),
+                  )),
                 ],
               ),
             ],
@@ -241,9 +395,11 @@ class _HubStat extends StatelessWidget {
         ),
         Text(
           sub,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.6),
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -504,7 +660,7 @@ class _ActivityCard extends StatelessWidget {
     final lower = category.toLowerCase();
     if (lower.contains('мұғалім') || lower.contains('преподаватель') || lower.contains('teacher')) return strings.teacher;
     if (lower.contains('пән') || lower.contains('предмет') || lower.contains('subject')) return strings.subject;
-    if (lower.contains('өмір') || lower.contains('жизнь') || lower.contains('life')) return strings.studentLife;
+    if (lower.contains('өмір') || lower.contains('жизнь') || lower.contains('life') || lower.contains('university')) return strings.studentLife;
     if (lower.contains('клуб') || lower.contains('club')) return strings.club;
     if (lower.contains('корпус') || lower.contains('building')) return strings.building;
     return category;
@@ -561,6 +717,59 @@ class _ActivityCard extends StatelessWidget {
                     fontStyle: FontStyle.italic,
                     color: isDark ? Colors.white70 : Colors.black87,
                   ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityLoading extends StatelessWidget {
+  const _ActivityLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle, 
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 80, 
+                  height: 10, 
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+                  )
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity, 
+                  height: 14, 
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                  )
                 ),
               ],
             ),

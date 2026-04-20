@@ -167,6 +167,12 @@ class AppStrings {
   String get submitAnonymously => _pick('Анонимді жіберу', 'Отправить анонимно', 'Submit anonymously');
   String get submitting => _pick('Жіберілуде...', 'Отправка...', 'Submitting...');
   String get anonymousReviewSubmitted => _pick('Анонимді пікір жіберілді.', 'Анонимный отзыв отправлен.', 'Anonymous review submitted.');
+  
+  // Add Review Screen specific labels
+  String get reviewsHeader => _pick('Пікірлер', 'Отзывы', 'Reviews');
+  String get expressOpinion => _pick('Пікір білдіру', 'Выразить мнение', 'Express opinion');
+  String get writeYourReview => _pick('Өз пікіріңізді жазыңыз', 'Напишите свой отзыв', 'Write your review');
+  String get uploadImageLabel => _pick('Сурет жүктеу', 'Загрузить фото', 'Upload image');
 
   // Leaderboard & Real-time features
   String get topRated => _pick('Үздіктер', 'Топ рейтинг', 'Top Rated');
@@ -246,6 +252,11 @@ class AppStrings {
   String get achievementLockedDesc => _pick('Бұл жетістікті ашу үшін белсендірек болыңыз!', 'Будьте активнее, чтобы открыть это достижение!', 'Be more active to unlock this!');
   String get profileUpdated => _pick('Профиль сәтті жаңартылды!', 'Профиль успешно обновлен!', 'Profile updated successfully!');
   String get ok => _pick('Жақсы', 'Хорошо', 'OK');
+  String get editProfile => _pick('Профильді өңдеу', 'Редактировать', 'Edit Profile');
+  String get bio => _pick('Өз туралы', 'О себе', 'Bio');
+  String get changePhoto => _pick('Суретті өзгерту', 'Сменить фото', 'Change Photo');
+  String get changeCover => _pick('Мұқабаны өзгерту', 'Сменить обложку', 'Change Cover');
+  String get biography => _pick('Биография', 'Биография', 'Biography');
 
   String get deleteReview => _pick('Пікірді өшіру', 'Удалить отзыв', 'Delete review');
   String get confirmDeleteReview => _pick('Сіз бұл пікірді өшіруді нақты қалайсыз ба?', 'Вы уверенны, что хотите удалить этот отзыв?', 'Are you sure you want to delete this review?');

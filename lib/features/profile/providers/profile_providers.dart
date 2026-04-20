@@ -59,8 +59,13 @@ class ProfileEditNotifier extends Notifier<ProfileEditState> {
   @override
   ProfileEditState build() => const ProfileEditState();
 
-  Future<void> saveDisplayName(String value) async {
-    final trimmed = value.trim();
+  Future<void> updateProfile({
+    required String displayName,
+    String? bio,
+    String? avatarUrl,
+    String? coverUrl,
+  }) async {
+    final trimmed = displayName.trim();
     if (trimmed.length < 2) {
       state = state.copyWith(error: 'Display name is too short.');
       return;
@@ -68,13 +73,18 @@ class ProfileEditNotifier extends Notifier<ProfileEditState> {
 
     state = state.copyWith(isSaving: true, saved: false, clearError: true);
     try {
-      await ref.read(profileRepositoryProvider).updateDisplayName(trimmed);
+      await ref.read(profileRepositoryProvider).updateProfile(
+            displayName: trimmed,
+            bio: bio,
+            avatarUrl: avatarUrl,
+            coverUrl: coverUrl,
+          );
       ref.invalidate(currentUserProfileProvider);
       state = state.copyWith(isSaving: false, saved: true, clearError: true);
     } catch (_) {
       state = state.copyWith(
         isSaving: false,
-        error: 'Could not update display name.',
+        error: 'Could not update profile.',
       );
     }
   }

@@ -262,7 +262,7 @@ class _AddReviewScreenState extends ConsumerState<AddReviewScreen> with SingleTi
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('${strings.viewRanking}:', style: theme.textTheme.titleMedium),
+                                        Text('${strings.reviewsHeader}:', style: theme.textTheme.titleMedium),
                                         const SizedBox(height: 12),
                                         Wrap(
                                           spacing: 8,
@@ -306,14 +306,14 @@ class _AddReviewScreenState extends ConsumerState<AddReviewScreen> with SingleTi
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('${strings.review} (${strings.cancel.toLowerCase()}):', style: theme.textTheme.titleMedium),
+                                        Text('${strings.expressOpinion}:', style: theme.textTheme.titleMedium),
                                         const SizedBox(height: 14),
                                         TextField(
                                           minLines: 4,
                                           maxLines: 6,
                                           onChanged: (text) => _customText = text,
                                           decoration: InputDecoration(
-                                            hintText: strings.searchPlaceholder,
+                                            hintText: strings.writeYourReview,
                                             filled: true,
                                             fillColor: isDark ? AppColors.darkMuted : AppColors.surfaceMuted,
                                             border: OutlineInputBorder(
@@ -338,7 +338,7 @@ class _AddReviewScreenState extends ConsumerState<AddReviewScreen> with SingleTi
                                         }
                                       },
                                       icon: const Icon(Icons.add_photo_alternate_outlined),
-                                      label: Text('${strings.addReview} (${strings.cancel.toLowerCase()})'),
+                                      label: Text(strings.uploadImageLabel),
                                       style: OutlinedButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(vertical: 16),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

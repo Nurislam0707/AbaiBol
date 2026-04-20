@@ -41,11 +41,19 @@ class ProfileRepository {
     return profile;
   }
 
-  Future<void> updateDisplayName(String displayName) async {
+  Future<void> updateProfile({
+    required String displayName,
+    String? bio,
+    String? avatarUrl,
+    String? coverUrl,
+  }) async {
     final user = await _authService.ensureSignedIn();
-    await _remoteService.updateDisplayName(
+    await _remoteService.updateProfile(
       userId: user.id,
       displayName: displayName.trim(),
+      bio: bio,
+      avatarUrl: avatarUrl,
+      coverUrl: coverUrl,
     );
   }
 

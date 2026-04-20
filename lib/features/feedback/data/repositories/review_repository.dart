@@ -7,6 +7,7 @@ import '../../domain/models/review_reference.dart';
 import '../../domain/models/review_thread.dart';
 import '../../domain/models/review_target_kind.dart';
 import '../services/review_remote_service.dart';
+import '../../../../shared/models/feedback_models.dart';
 
 class DuplicateReviewException implements Exception {
   const DuplicateReviewException();
@@ -175,6 +176,58 @@ class ReviewRepository {
       }
       rethrow;
     }
+  }
+
+  Future<List<ActivityFeedItem>> fetchRecentActivity({int limit = 10}) async {
+    final rows = await _remoteService.fetchGlobalRecentReviews(limit: limit);
+    return rows.map((row) {
+      String category = 'Өмір';
+      String targetName = 'Белгісіз';
+
+      if (row['teacher'] != null) {
+        category = 'Мұғалім';
+        targetName = (row['teacher'] as Map<String, dynamic>)['name'] as String;
+      } else if (row['subject'] != null) {
+        category = 'Пән';
+        targetName = (row['subject'] as Map<String, dynamic>)['name'] as String;
+      } else if (row['building'] != null) {
+        category = 'Корпус';
+        targetName = (row['building'] as Map<String, dynamic>)['name'] as String;
+      } else if (row['student_life'] != null) {
+        category = 'Студенттік өмір';
+        targetName =
+            (row['student_life'] as Map<String, dynamic>)['name'] as String;
+      } else if (row['club'] != null) {
+        category = 'Клуб';
+        targetName = (row['club'] as Map<String, dynamic>)['name'] as String;
+      }
+
+      final createdAt = DateTime.parse(row['created_at'] as String).toLocal();
+      final diff = DateTime.now().difference(createdAt);
+
+      String timeAgo;
+      if (diff.inMinutes < 1) {
+        timeAgo = 'жаңа ғана';
+      } else if (diff.inMinutes < 60) {
+        timeAgo = '${diff.inMinutes} мин бұрын';
+      } else if (diff.inHours < 24) {
+        timeAgo = '${diff.inHours} сағ бұрын';
+      } else {
+        timeAgo = '${diff.inDays} күн бұрын';
+      }
+
+      final reviewText = row['text'] as String? ?? '';
+      final displaysText =
+          reviewText.isEmpty ? 'Мәтінсіз пікір қалдырды' : reviewText;
+
+      return ActivityFeedItem(
+        id: row['id'] as String,
+        category: category,
+        time: timeAgo,
+        text: '$targetName: "$displaysText"',
+        isRating: true,
+      );
+    }).toList();
   }
 }
 

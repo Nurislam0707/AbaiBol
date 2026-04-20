@@ -19,7 +19,9 @@ import '../../features/feedback/presentation/screens/teachers_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/my_reviews_screen.dart';
+import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/feedback/presentation/screens/qr_scanner_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../shared/widgets/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -85,6 +87,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile/reviews',
         pageBuilder: (context, state) =>
             _slidePage(state: state, child: const MyReviewsScreen()),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        pageBuilder: (context, state) =>
+            _slideUpPage(state: state, child: const EditProfileScreen()),
+      ),
+      GoRoute(
+        path: '/notifications',
+        pageBuilder: (context, state) =>
+            _slidePage(state: state, child: const NotificationsScreen()),
       ),
       GoRoute(
         path: '/faculties/:kind',
