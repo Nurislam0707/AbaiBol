@@ -69,8 +69,8 @@ Built with a "Glassmorphism" design system, Nuris offers a premium, modern, and 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Nurislam0707/nuris.git
-   cd nuris
+   git clone https://github.com/Nurislam0707/abaibol.git
+   cd abaibol
    ```
 
 2. **Install dependencies**
